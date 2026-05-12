@@ -105,14 +105,14 @@ class RewardWeights:
     lateral_pen:    float = -0.5    # penalise sideways drift (vy)
     roll_pen:       float = -0.5    # penalise |roll|
     pitch_pen:      float = -0.5    # penalise |pitch|
-    height_pen:     float = -5.0    # penalise height deviation
+    height_pen:     float = -8.0    # penalise height deviation
     action_smooth:  float = -0.05   # penalise large deltas
     contact_timing: float =  1.0    # reward >=3 feet on ground (high — survival first)
     alive_bonus:    float =  1.0    # per-step survival (high — survival first)
     fall_penalty:   float = -5.0    # terminal fall (lower so gradient not too harsh)
 
     target_height:  float = 0.20    # metres, rex crouched stand
-    height_tol:     float = 0.03    # +/- metres before penalty (slightly more tolerant)
+    height_tol:     float = 0.02    # +/- metres before penalty (slightly more tolerant)
     max_roll_deg:   float = 45.0    # fall threshold (slightly more forgiving)
     max_pitch_deg:  float = 45.0
 
@@ -197,7 +197,7 @@ class QuadrupedBase(abc.ABC):
         terminated = (
             abs(roll)  > self.rw.max_roll_deg  or
             abs(pitch) > self.rw.max_pitch_deg or
-            obs["body_pos"][2] < 0.12
+            obs["body_pos"][2] < 0.15
         )
         if terminated:
             reward += self.rw.fall_penalty
