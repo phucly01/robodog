@@ -74,10 +74,10 @@ DELTA_MAX = 0.2   # rad/step — matches MG996R physical speed at 6V
 #   leg      = -0.5 thigh angled slightly forward (-29 deg)
 #   foot     =  0.9 knee bent to compensate (+52 deg)
 HOME_ANGLES = np.array([
-    0.0, -0.5, 0.9,
-    0.0, -0.5, 0.9,
-    0.0, -0.5, 0.9,
-    0.0, -0.5, 0.9,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
 ], dtype=np.float32)
 
 # Toe PyBullet link indices (confirmed from rex.urdf joint list output):
@@ -101,17 +101,17 @@ LEG_INDICES = {
 class RewardWeights:
     # Phase 1: learn to stand and survive
     # Once mean episode length > 500 steps, increase forward_vel to 2.0
-    forward_vel:    float =  2.0    # reward forward velocity (vx)
-    lateral_pen:    float = -0.5    # penalise sideways drift (vy)
-    roll_pen:       float = -0.5    # penalise |roll|
-    pitch_pen:      float = -0.5    # penalise |pitch|
-    height_pen:     float = -8.0    # penalise height deviation
-    action_smooth:  float = -0.05   # penalise large deltas
-    contact_timing: float =  1.0    # reward >=3 feet on ground (high — survival first)
-    alive_bonus:    float =  1.0    # per-step survival (high — survival first)
+    forward_vel:    float =  0.0    # reward forward velocity (vx)
+    lateral_pen:    float =  0.0    # penalise sideways drift (vy)
+    roll_pen:       float = -1.0    # penalise |roll|
+    pitch_pen:      float = -1.0    # penalise |pitch|
+    height_pen:     float = -20.0    # penalise height deviation
+    action_smooth:  float = -0.02   # penalise large deltas
+    contact_timing: float =  0.5    # reward >=3 feet on ground (high — survival first)
+    alive_bonus:    float =  0.2    # per-step survival (high — survival first)
     fall_penalty:   float = -5.0    # terminal fall (lower so gradient not too harsh)
 
-    target_height:  float = 0.20    # metres, rex crouched stand
+    target_height:  float = 0.25    # metres, rex crouched stand
     height_tol:     float = 0.02    # +/- metres before penalty (slightly more tolerant)
     max_roll_deg:   float = 45.0    # fall threshold (slightly more forgiving)
     max_pitch_deg:  float = 45.0
@@ -197,7 +197,7 @@ class QuadrupedBase(abc.ABC):
         terminated = (
             abs(roll)  > self.rw.max_roll_deg  or
             abs(pitch) > self.rw.max_pitch_deg or
-            obs["body_pos"][2] < 0.15
+            obs["body_pos"][2] < 0.05
         )
         if terminated:
             reward += self.rw.fall_penalty
@@ -372,7 +372,7 @@ class QuadrupedSim(QuadrupedBase):
                 self._robot_id, jid,
                 p.POSITION_CONTROL,
                 targetPosition=float(angles[i]),  # radians, no conversion
-                force=8.0,        # ~MG996R stall at 6V in Nm
+                force=20.0,        # ~MG996R stall at 6V in Nm
                 maxVelocity=10.0, # rad/s cap
                 physicsClientId=c
             )
@@ -437,7 +437,7 @@ class QuadrupedSim(QuadrupedBase):
                 self._robot_id, jid,
                 p.POSITION_CONTROL,
                 targetPosition=float(HOME_ANGLES[i]),
-                force=8.0,
+                force=20.0,
                 physicsClientId=c
             )
         # Settle for 0.5s under gravity
